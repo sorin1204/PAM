@@ -2,9 +2,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pam_ll1/main.dart';
 
 void main() {
-  testWidgets('DiscountApp smoke test', (WidgetTester tester) async {
-    await tester.pumpWidget(const DiscountApp());
+  TestWidgetsFlutterBinding.ensureInitialized();
 
-    expect(find.text('Calculator Reducere'), findsOneWidget);
+  testWidgets('GemStoreApp smoke test', (WidgetTester tester) async {
+    await tester.pumpWidget(const GemStoreApp());
+    await tester.pump();
+
+    expect(find.text('GemStore'), findsWidgets);
   });
 }
