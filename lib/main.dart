@@ -16,6 +16,7 @@ import 'widgets/sort_dropdown_widget.dart';
 import 'models/product.dart';
 
 void main() {
+
   runApp(const GemStoreApp());
 }
 
