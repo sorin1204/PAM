@@ -17,6 +17,44 @@ class ProductDetailPage extends StatefulWidget {
 }
 
 class _ProductDetailPageState extends State<ProductDetailPage> {
+  Map<String, dynamic> _detailFor(Map<String, dynamic> response, String productId) {
+    dynamic data = response['data'] ?? response['details'] ?? response;
+    if (data is Map && data['product'] is Map) {
+      data = data['product'];
+    }
+    if (data is List) {
+      for (final item in data) {
+        if (item is Map && '${item['id'] ?? item['productId']}' == productId) return Map<String, dynamic>.from(item);
+      }
+    }
+    if (data is Map) {
+      final map = Map<String, dynamic>.from(data);
+      final products = map['products'] ?? map['items'];
+      if (products is List) {
+        for (final item in products) {
+          if (item is Map && '${item['id'] ?? item['productId']}' == productId) return Map<String, dynamic>.from(item);
+        }
+      }
+      if (map[productId] is Map) return Map<String, dynamic>.from(map[productId] as Map);
+      if ('${map['id'] ?? map['productId']}' == productId) return map;
+    }
+    return const {};
+  }
+
+  Product _productWithDetails(Product original, Map<String, dynamic> detail) {
+    if (detail.isEmpty) return original;
+    final gallery = detail['images'] ?? detail['gallery'];
+    final image = detail['imageUrl'] ?? detail['mainImageUrl'] ?? detail['image'] ?? (gallery is List && gallery.isNotEmpty ? gallery.first : null);
+    return original.copyWith(
+      name: detail['name'] as String? ?? original.name,
+      description: detail['description'] as String? ?? original.description,
+      imageUrl: image as String? ?? original.imageUrl,
+      price: (detail['price'] as num?)?.toDouble() ?? original.price,
+      rating: (detail['rating'] as num?)?.toDouble() ?? original.rating,
+      ratingCount: (detail['ratingCount'] as num?)?.toInt() ?? original.ratingCount,
+    );
+  }
+
   int selectedColorIndex = 0; // 0: Bej, 1: Black, 2: Coral
   String selectedSize = 'L';
   String selectedVariant = '';
@@ -35,6 +73,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<GemStoreCubit>().state;
+    final detail = state is GemStoreSuccess ? _detailFor(state.productDetails, widget.product.id) : const <String, dynamic>{};
+    final product = _productWithDetails(widget.product, detail);
     final isFav = (state is GemStoreSuccess)
         ? state.favoriteIds.contains(widget.product.id)
         : widget.product.isFavorite;
@@ -51,7 +91,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // 1. Gallery Section
-                _buildGallerySection(context, isFav),
+                _buildGallerySection(context, isFav, product),
 
                 // 2. Product Sheet Overlapping Card
                 _buildProductSheet(),
@@ -69,7 +109,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   /* ============================================================================
    * 1. GALLERY SECTION
    * ============================================================================ */
-  Widget _buildGallerySection(BuildContext context, bool isFav) {
+  Widget _buildGallerySection(BuildContext context, bool isFav, Product product) {
     return SizedBox(
       height: 410,
       width: double.infinity,
@@ -101,7 +141,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                 width: 260,
                 height: 390,
                 child: ProductImageWidget(
-                  imageUrl: widget.product.imageUrl,
+                  imageUrl: product.imageUrl,
                   fit: BoxFit.contain,
                   alignment: Alignment.center,
                 ),

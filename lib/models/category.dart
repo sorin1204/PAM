@@ -3,12 +3,14 @@ class CategoryModel {
   final String label;
   final String iconType;
   final bool isSelected;
+  final String iconUrl;
 
   const CategoryModel({
     required this.id,
     required this.label,
     required this.iconType,
     this.isSelected = false,
+    this.iconUrl = '',
   });
 
   factory CategoryModel.fromJson(Map<String, dynamic> json) {
@@ -21,6 +23,7 @@ class CategoryModel {
       label: label,
       iconType: iconType,
       isSelected: isSelected,
+      iconUrl: json['iconUrl'] as String? ?? '',
     );
   }
 
@@ -29,12 +32,14 @@ class CategoryModel {
     String? label,
     String? iconType,
     bool? isSelected,
+    String? iconUrl,
   }) {
     return CategoryModel(
       id: id ?? this.id,
       label: label ?? this.label,
       iconType: iconType ?? this.iconType,
       isSelected: isSelected ?? this.isSelected,
+      iconUrl: iconUrl ?? this.iconUrl,
     );
   }
 }

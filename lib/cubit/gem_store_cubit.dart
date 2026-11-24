@@ -1,25 +1,48 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../services/json_service.dart';
+import '../core/network/api_client.dart';
+import '../features/feed/data/datasources/feed_remote_data_source.dart';
+import '../features/feed/data/repositories/feed_repository_impl.dart';
+import '../features/feed/domain/usecases/get_feed.dart';
+import '../features/feed/domain/usecases/get_feed_details.dart';
 import '../models/product.dart';
 import '../models/category.dart';
 import '../models/review.dart';
+import '../models/home_data.dart';
 import '../services/review_storage.dart';
 import 'gem_store_state.dart';
 
 class GemStoreCubit extends Cubit<GemStoreState> {
-  final JsonService _jsonService;
+  final GetFeed _getFeed;
+  final GetFeedDetails _getFeedDetails;
   final ReviewStorage _reviewStorage;
+  int apiVersion;
 
-  GemStoreCubit({JsonService? jsonService, ReviewStorage? reviewStorage})
-    : _jsonService = jsonService ?? JsonService(),
-      _reviewStorage = reviewStorage ?? ReviewStorage(),
-      super(const GemStoreInitial());
+  GemStoreCubit({
+    GetFeed? getFeed,
+    GetFeedDetails? getFeedDetails,
+    ReviewStorage? reviewStorage,
+    this.apiVersion = 1,
+  })  : _getFeed = getFeed ?? GetFeed(FeedRepositoryImpl(FeedRemoteDataSourceImpl(ApiClient()))),
+        _getFeedDetails = getFeedDetails ?? GetFeedDetails(FeedRepositoryImpl(FeedRemoteDataSourceImpl(ApiClient()))),
+        _reviewStorage = reviewStorage ?? ReviewStorage(),
+        super(const GemStoreInitial());
+
+  void changeApiVersion(int version) {
+    if (version < 1 || version > 4) return;
+    apiVersion = version;
+    loadData();
+  }
 
   Future<void> loadData() async {
     emit(const GemStoreLoading());
     try {
-      final homeData = await _jsonService.loadData();
+      final results = await Future.wait([
+        _getFeed(version: apiVersion),
+        _getFeedDetails(version: apiVersion),
+      ]);
+      final homeData = results[0] as HomePageData;
+      final productDetails = Map<String, dynamic>.from(results[1] as Map);
 
       // Collect all products
       // Recommendations can also be featured products. Keep one item per id so
@@ -81,6 +104,7 @@ class GemStoreCubit extends Cubit<GemStoreState> {
           profileEmail: 'you@example.com',
           profileAvatarUrl: 'photos/profile_avatar_unique.png',
           cartQuantities: const {},
+          productDetails: productDetails,
         ),
       );
     } catch (e) {

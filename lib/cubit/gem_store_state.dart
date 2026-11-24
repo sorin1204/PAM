@@ -29,6 +29,7 @@ class GemStoreSuccess extends GemStoreState {
   final String profileEmail;
   final String profileAvatarUrl;
   final Map<String, int> cartQuantities;
+  final Map<String, dynamic> productDetails;
 
   const GemStoreSuccess({
     required this.homeData,
@@ -44,6 +45,7 @@ class GemStoreSuccess extends GemStoreState {
     required this.profileEmail,
     required this.profileAvatarUrl,
     required this.cartQuantities,
+    this.productDetails = const {},
   });
 
   GemStoreSuccess copyWith({
@@ -60,6 +62,7 @@ class GemStoreSuccess extends GemStoreState {
     String? profileEmail,
     String? profileAvatarUrl,
     Map<String, int>? cartQuantities,
+    Map<String, dynamic>? productDetails,
   }) {
     return GemStoreSuccess(
       homeData: homeData ?? this.homeData,
@@ -75,6 +78,7 @@ class GemStoreSuccess extends GemStoreState {
       profileEmail: profileEmail ?? this.profileEmail,
       profileAvatarUrl: profileAvatarUrl ?? this.profileAvatarUrl,
       cartQuantities: cartQuantities ?? this.cartQuantities,
+      productDetails: productDetails ?? this.productDetails,
     );
   }
 }

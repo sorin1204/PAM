@@ -113,11 +113,19 @@ class FavoritesScreen extends StatelessWidget {
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(12),
-                            child: Image.asset(
+                            child: product.imageUrl.startsWith('http')
+                                ? Image.network(
                               product.imageUrl,
                               width: double.infinity,
                               fit: BoxFit.cover,
-                            ),
+                              errorBuilder: (_, _, _) => const Icon(Icons.image_not_supported_outlined),
+                            )
+                                : Image.asset(
+                                    product.imageUrl,
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, _, _) => const Icon(Icons.image_not_supported_outlined),
+                                  ),
                           ),
                         ),
                         Positioned(

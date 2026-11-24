@@ -10,6 +10,7 @@ class HomePageData {
   final List<Map<String, dynamic>> topCollections;
   final List<Map<String, dynamic>> categoryPromos;
   final Map<String, dynamic> productPageData;
+  final String storeName;
 
   const HomePageData({
     required this.categories,
@@ -20,24 +21,33 @@ class HomePageData {
     required this.topCollections,
     required this.categoryPromos,
     required this.productPageData,
+    this.storeName = 'GemStore',
   });
 
   factory HomePageData.fromJson(Map<String, dynamic> json) {
-    final homePage = json['homePage'] as Map<String, dynamic>? ?? {};
-    final productPage = json['productPage'] as Map<String, dynamic>? ?? {};
+    final root = json['data'] is Map
+        ? Map<String, dynamic>.from(json['data'] as Map)
+        : json;
+    final homePage = (root['homePage'] ?? root['home'] ?? root['feed']) is Map
+        ? Map<String, dynamic>.from((root['homePage'] ?? root['home'] ?? root['feed']) as Map)
+        : root;
+    final productPage = (root['productPage'] ?? root['details']) is Map
+        ? Map<String, dynamic>.from((root['productPage'] ?? root['details']) as Map)
+        : <String, dynamic>{};
 
     final categoriesList = (homePage['categories'] as List<dynamic>?)
-            ?.map((e) => CategoryModel.fromJson(e as Map<String, dynamic>))
+            ?.map((e) => CategoryModel.fromJson(Map<String, dynamic>.from(e as Map)))
             .toList() ??
         [];
 
-    final featureProductsList = (homePage['featureProducts'] as List<dynamic>?)
-            ?.map((e) => Product.fromJson(e as Map<String, dynamic>))
+    final featureSource = homePage['featureProducts'] ?? homePage['products'] ?? homePage['items'];
+    final featureProductsList = (featureSource as List<dynamic>?)
+            ?.map((e) => Product.fromJson(Map<String, dynamic>.from(e as Map)))
             .toList() ??
         [];
 
-    final recommendedList = (homePage['recommended'] as List<dynamic>?)
-            ?.map((e) => Product.fromJson(e as Map<String, dynamic>))
+    final recommendedList = ((homePage['recommended'] ?? homePage['recommendations'] ?? const []) as List<dynamic>?)
+            ?.map((e) => Product.fromJson(Map<String, dynamic>.from(e as Map)))
             .toList() ??
         [];
 
@@ -53,13 +63,14 @@ class HomePageData {
 
     return HomePageData(
       categories: categoriesList,
-      heroBanner: Map<String, dynamic>.from(homePage['heroBanner'] as Map? ?? {}),
+      heroBanner: Map<String, dynamic>.from((homePage['heroBanner'] ?? homePage['banner']) as Map? ?? {}),
       featureProducts: featureProductsList,
       newCollection: Map<String, dynamic>.from(homePage['newCollection'] as Map? ?? {}),
       recommended: recommendedList,
       topCollections: topCollectionsList,
       categoryPromos: categoryPromosList,
       productPageData: Map<String, dynamic>.from(productPage),
+      storeName: homePage['storeName'] as String? ?? 'GemStore',
     );
   }
 }

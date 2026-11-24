@@ -21,12 +21,20 @@ void main() {
 }
 
 class GemStoreApp extends StatelessWidget {
-  const GemStoreApp({super.key});
+  final GemStoreCubit? cubit;
+
+  const GemStoreApp({super.key, this.cubit});
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider<GemStoreCubit>(
-      create: (context) => GemStoreCubit()..loadData(),
+      create: (context) {
+        final selectedCubit = cubit ?? (() {
+          // GemStore matches the fashion-store API schema served by v1.
+          return GemStoreCubit(apiVersion: 1);
+        })();
+        return selectedCubit..loadData();
+      },
       child: MaterialApp(
         title: 'GemStore',
         debugShowCheckedModeBanner: false,
@@ -133,7 +141,10 @@ class GemStoreHomePage extends StatelessWidget {
                     const SizedBox(height: 28),
 
                     // 3. Hero Autumn Collection Banner
-                    HeroCollectionBanner(product: defaultProduct),
+                    HeroCollectionBanner(
+                      product: defaultProduct,
+                      banner: state.homeData.heroBanner,
+                    ),
                     const SizedBox(height: 32),
 
                     // 4. Feature Products
@@ -145,7 +156,10 @@ class GemStoreHomePage extends StatelessWidget {
                     const SizedBox(height: 32),
 
                     // 5. Banner HANG OUT & PARTY
-                    HangOutPartyBanner(product: defaultProduct),
+                    HangOutPartyBanner(
+                      product: defaultProduct,
+                      collection: state.homeData.newCollection,
+                    ),
                     const SizedBox(height: 32),
 
                     // 6. Recommended Section
@@ -153,11 +167,17 @@ class GemStoreHomePage extends StatelessWidget {
                     const SizedBox(height: 32),
 
                     // 7. Top Collection Section
-                    TopCollectionSection(defaultProduct: defaultProduct),
+                    TopCollectionSection(
+                      defaultProduct: defaultProduct,
+                      collections: state.homeData.topCollections,
+                    ),
                     const SizedBox(height: 24),
 
                     // 8. Category Cards (T-Shirts / Dresses)
-                    BottomCategoryCardsSection(defaultProduct: defaultProduct),
+                    BottomCategoryCardsSection(
+                      defaultProduct: defaultProduct,
+                      promos: state.homeData.categoryPromos,
+                    ),
                   ],
                 ),
               );
@@ -442,9 +462,9 @@ class CategoriesSection extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: categories.map((cat) {
-          final label = cat.label as String;
+          final label = cat.label;
           final isSelected = label == selectedCategory;
-          final iconType = _parseIconType(cat.iconType as String);
+          final iconType = _parseIconType(cat.iconType);
 
           return CategoryItemWidget(
             label: label,
@@ -668,8 +688,9 @@ class _LineIconPainter extends CustomPainter {
  * ============================================================================ */
 class HeroCollectionBanner extends StatefulWidget {
   final Product product;
+  final Map<String, dynamic> banner;
 
-  const HeroCollectionBanner({super.key, required this.product});
+  const HeroCollectionBanner({super.key, required this.product, required this.banner});
 
   @override
   State<HeroCollectionBanner> createState() => _HeroCollectionBannerState();
@@ -715,10 +736,12 @@ class _HeroCollectionBannerState extends State<HeroCollectionBanner> {
                 Positioned.fill(
                   child: PageView.builder(
                     controller: _pageController,
-                    itemCount: _bannerImages.length,
+                    itemCount: ((widget.banner['slides'] as num?)?.toInt() ?? _bannerImages.length).clamp(1, _bannerImages.length),
                     onPageChanged: (page) => setState(() => _activePage = page),
                     itemBuilder: (context, index) => ProductImageWidget(
-                      imageUrl: _bannerImages[index],
+                      imageUrl: (widget.banner['imageUrl'] as String?)?.isNotEmpty == true
+                          ? widget.banner['imageUrl'] as String
+                          : _bannerImages[index],
                       fit: BoxFit.cover,
                       alignment: Alignment.center,
                     ),
@@ -743,7 +766,7 @@ class _HeroCollectionBannerState extends State<HeroCollectionBanner> {
                   right: 22,
                   top: 22,
                   child: Text(
-                    'Autumn\nCollection\n2021',
+                    (widget.banner['title'] as String? ?? 'Autumn Collection 2021').replaceAll(' ', '\n'),
                     style: GoogleFonts.poppins(
                       fontSize: 21,
                       fontWeight: FontWeight.w700,
@@ -968,8 +991,9 @@ class FeatureProductCard extends StatelessWidget {
  * ============================================================================ */
 class HangOutPartyBanner extends StatelessWidget {
   final Product product;
+  final Map<String, dynamic> collection;
 
-  const HangOutPartyBanner({super.key, required this.product});
+  const HangOutPartyBanner({super.key, required this.product, required this.collection});
 
   @override
   Widget build(BuildContext context) {
@@ -1012,8 +1036,7 @@ class HangOutPartyBanner extends StatelessWidget {
                   top: 0,
                   bottom: -10,
                   child: ProductImageWidget(
-                    imageUrl:
-                        'photos/253f5374175bb9210b2f2de3f4abe98c37fd3cbb.png',
+                    imageUrl: collection['imageUrl'] as String? ?? 'photos/253f5374175bb9210b2f2de3f4abe98c37fd3cbb.png',
                     fit: BoxFit.contain,
                     alignment: Alignment.center,
                   ),
@@ -1033,7 +1056,7 @@ class HangOutPartyBanner extends StatelessWidget {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            'NEW COLLECTION',
+                            (collection['label'] as String? ?? 'NEW COLLECTION'),
                             style: GoogleFonts.poppins(
                               fontSize: 10,
                               fontWeight: FontWeight.w500,
@@ -1045,7 +1068,7 @@ class HangOutPartyBanner extends StatelessWidget {
                       ),
                       const SizedBox(height: 14),
                       Text(
-                        'HANG OUT\n& PARTY',
+                        (collection['title'] as String? ?? 'HANG OUT & PARTY').replaceFirst(' & ', '\n& '),
                         style: GoogleFonts.poppins(
                           fontSize: 20,
                           fontWeight: FontWeight.w400,
@@ -1261,8 +1284,9 @@ class CompactRecommendationTile extends StatelessWidget {
  * ============================================================================ */
 class TopCollectionSection extends StatelessWidget {
   final Product defaultProduct;
+  final List<Map<String, dynamic>> collections;
 
-  const TopCollectionSection({super.key, required this.defaultProduct});
+  const TopCollectionSection({super.key, required this.defaultProduct, required this.collections});
 
   @override
   Widget build(BuildContext context) {
@@ -1279,11 +1303,11 @@ class TopCollectionSection extends StatelessWidget {
           child: Column(
             children: [
               TopCollectionPromoCard(
-                label: 'Sale up to 40%',
-                title: 'FOR SLIM\n& BEAUTY',
+                label: collections.isNotEmpty ? (collections[0]['label'] as String? ?? 'Sale up to 40%') : 'Sale up to 40%',
+                title: collections.isNotEmpty ? (collections[0]['title'] as String? ?? 'FOR SLIM\n& BEAUTY') : 'FOR SLIM\n& BEAUTY',
                 isTitleBold: false,
                 imagePath:
-                    'photos/3d8289e005f646c4c914bb766d81b1457a1815b2.png',
+                    collections.isNotEmpty ? (collections[0]['imageUrl'] as String? ?? 'photos/3d8289e005f646c4c914bb766d81b1457a1815b2.png') : 'photos/3d8289e005f646c4c914bb766d81b1457a1815b2.png',
                 cardHeight: 145,
                 circleSize: 125,
                 circleRight: 15,
@@ -1294,11 +1318,11 @@ class TopCollectionSection extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               TopCollectionPromoCard(
-                label: 'Summer Collection 2021',
-                title: 'Most sexy\n& fabulous\ndesign',
+                label: collections.length > 1 ? (collections[1]['label'] as String? ?? 'Summer Collection 2021') : 'Summer Collection 2021',
+                title: collections.length > 1 ? (collections[1]['title'] as String? ?? 'Most sexy\n& fabulous\ndesign') : 'Most sexy\n& fabulous\ndesign',
                 isTitleBold: true,
                 imagePath:
-                    'photos/071373fad51ad0143a98105907f84f8d80c53d58.png',
+                    collections.length > 1 ? (collections[1]['imageUrl'] as String? ?? 'photos/071373fad51ad0143a98105907f84f8d80c53d58.png') : 'photos/071373fad51ad0143a98105907f84f8d80c53d58.png',
                 cardHeight: 165,
                 circleSize: 135,
                 circleRight: 15,
@@ -1442,8 +1466,9 @@ class TopCollectionPromoCard extends StatelessWidget {
  * ============================================================================ */
 class BottomCategoryCardsSection extends StatelessWidget {
   final Product defaultProduct;
+  final List<Map<String, dynamic>> promos;
 
-  const BottomCategoryCardsSection({super.key, required this.defaultProduct});
+  const BottomCategoryCardsSection({super.key, required this.defaultProduct, required this.promos});
 
   @override
   Widget build(BuildContext context) {
@@ -1453,23 +1478,19 @@ class BottomCategoryCardsSection extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 24),
-        children: [
-          BottomCategoryCard(
-            category: 'T-Shirts',
-            title: 'The\nOffice\nLife',
-            imagePath: 'photos/24642656f175b762469766070dae1ee73196af89.png',
-            imageOnLeft: true,
-            product: defaultProduct,
-          ),
-          const SizedBox(width: 12),
-          BottomCategoryCard(
-            category: 'Dresses',
-            title: 'Elegant\nDesign',
-            imagePath: 'photos/2059944f83f665e563d29b20be6188383e033306.png',
-            imageOnLeft: false,
-            product: defaultProduct,
-          ),
-        ],
+        children: promos.asMap().entries.map((entry) {
+          final promo = entry.value;
+          return Padding(
+            padding: EdgeInsets.only(right: entry.key == promos.length - 1 ? 0 : 12),
+            child: BottomCategoryCard(
+              category: promo['category'] as String? ?? 'Collection',
+              title: (promo['title'] as String? ?? '').replaceAll(' ', '\n'),
+              imagePath: promo['imageUrl'] as String? ?? '',
+              imageOnLeft: entry.key.isEven,
+              product: defaultProduct,
+            ),
+          );
+        }).toList(),
       ),
     );
   }

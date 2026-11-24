@@ -8,6 +8,7 @@ class Product {
   final double rating;
   final int ratingCount;
   final String description;
+  final String currency;
 
   const Product({
     required this.id,
@@ -19,10 +20,11 @@ class Product {
     this.rating = 5.0,
     this.ratingCount = 0,
     this.description = '',
+    this.currency = 'USD',
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
-    final img = (json['imageUrl'] ?? json['mainImageUrl'] ?? '') as String;
+    final img = (json['imageUrl'] ?? json['mainImageUrl'] ?? json['image'] ?? '') as String;
 
     return Product(
       id: json['id'] as String? ?? '',
@@ -34,6 +36,7 @@ class Product {
       rating: (json['rating'] as num?)?.toDouble() ?? 5.0,
       ratingCount: json['ratingCount'] as int? ?? 0,
       description: json['description'] as String? ?? '',
+      currency: json['currency'] as String? ?? 'USD',
     );
   }
 
@@ -48,6 +51,7 @@ class Product {
       'rating': rating,
       'ratingCount': ratingCount,
       'description': description,
+      'currency': currency,
     };
   }
 
@@ -61,6 +65,7 @@ class Product {
     double? rating,
     int? ratingCount,
     String? description,
+    String? currency,
   }) {
     return Product(
       id: id ?? this.id,
@@ -72,6 +77,7 @@ class Product {
       rating: rating ?? this.rating,
       ratingCount: ratingCount ?? this.ratingCount,
       description: description ?? this.description,
+      currency: currency ?? this.currency,
     );
   }
 }

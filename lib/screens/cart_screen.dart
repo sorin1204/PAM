@@ -108,7 +108,8 @@ class _CartProductTile extends StatelessWidget {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(15),
-              child: Image.asset(
+              child: product.imageUrl.startsWith('http')
+                  ? Image.network(
                 product.imageUrl,
                 width: 82,
                 height: 98,
@@ -119,7 +120,19 @@ class _CartProductTile extends StatelessWidget {
                   color: const Color(0xFFE7F2EF),
                   child: const Icon(Icons.image_not_supported_outlined),
                 ),
-              ),
+              )
+                  : Image.asset(
+                      product.imageUrl,
+                      width: 82,
+                      height: 98,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => Container(
+                        width: 82,
+                        height: 98,
+                        color: const Color(0xFFE7F2EF),
+                        child: const Icon(Icons.image_not_supported_outlined),
+                      ),
+                    ),
             ),
           ),
           const SizedBox(width: 13),
